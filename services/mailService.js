@@ -1,11 +1,11 @@
-const nodemailer = require('nodemailer');
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.MAIL_ID,
-        pass: process.env.MAIL_PASSWORD
-    }
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_ID,
+    pass: process.env.MAIL_PASSWORD,
+  },
 });
 
 // Function to send OTP email
@@ -16,14 +16,14 @@ async function sendOTPEmail(email, otp) {
     subject: "Login OTP",
     text: `Your OTP is ${otp}. It expires in an hour.`,
   };
-  try{
+
+  try {
     await transporter.sendMail(mailOptions);
     console.log(`OTP sent to ${email}`);
-  }
-  catch(error){
+  } catch (error) {
     console.error(`Error sending OTP to ${email}:`, error);
-    throw new Error('Failed to send OTP email');
+    throw new Error("Failed to send OTP email");
   }
 }
 
-module.exports = sendOTPEmail;
+export default sendOTPEmail;
