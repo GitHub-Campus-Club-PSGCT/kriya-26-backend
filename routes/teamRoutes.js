@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { teamAuthMiddleware } from "../middleware/authMiddleware.js";
 import { login, logout } from "../controllers/teamAuthController.js";
+import { selectShip } from "../controllers/teamController.js";
 import {
-    chooseShipConfig,
     round1Answers,
     round2Answers,
     selectActionCards,
@@ -21,8 +21,8 @@ router.post("/login", login);
 router.post("/logout", teamAuthMiddleware, logout);
 
 // Ship config
-router.post("/choose-shipconfig", teamAuthMiddleware, chooseShipConfig);
-
+// router.post("/choose-shipconfig", teamAuthMiddleware, chooseShipConfig);
+router.post("/select-ship", selectShip);
 // Round answers
 router.post("/round1answers", teamAuthMiddleware, round1Answers);
 router.post("/round2answers", teamAuthMiddleware, round2Answers);

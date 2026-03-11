@@ -67,32 +67,40 @@ export const deleteTeam = async (req, res) => {
  * Choose ship configuration for the team.
  * Sets the shipConfig string (WARSHIP, MERCHANT, GHOST).
  */
-export const chooseShipConfig = async (req, res) => {
+export const selectShip = async (req, res) => {
   try {
-    const { shipConfig } = req.body;
-    if (!shipConfig) {
-      return res.status(400).json({ msg: "shipConfig is required" });
+    const { kriyaID, shipConfig } = req.body;
+
+    if (!kriyaID || !shipConfig) {
+      return res.status(400).json({
+        success: false,
+        message: "kriyaID and shipConfig required"
+      });
     }
 
-    const validShips = ["WARSHIP", "MERCHANT", "GHOST"];
-    if (!validShips.includes(shipConfig.toUpperCase())) {
-      return res.status(400).json({ msg: `Invalid ship. Must be one of: ${validShips.join(", ")}` });
+    const team = await Team.findOne({ kriyaID });
+
+    if (!team) {
+      return res.status(404).json({
+        success: false,
+        message: "Team not found"
+      });
     }
 
-    const team = await Team.findById(req.team._id);
-    if (!team) return res.status(404).json({ msg: "Team not found" });
-
-    team.shipConfig = shipConfig.toUpperCase();
+    team.shipConfig = shipConfig;
     await team.save();
 
-    const config = getShipConfig(team.shipConfig);
-    res.json({
-      msg: "Ship configuration selected",
-      shipConfig: team.shipConfig,
-      details: config
+    res.status(200).json({
+      success: true,
+      message: "Ship selected successfully",
+      shipConfig: team.shipConfig
     });
-  } catch (err) {
-    res.status(500).json({ msg: "Error choosing ship config", error: err.message });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 

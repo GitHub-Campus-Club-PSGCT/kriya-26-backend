@@ -1,15 +1,30 @@
 import Round1Set from "../models/Round1Set.js";
 import Team from "../models/Team.js";
-// GET all questions of one team
+
+// GET all questions of a team
 export const getRound1Questions = async (req, res) => {
   try {
-    const team = req.query.team || "KRIYA2026";
+    const { kriyaID } = req.query;
 
-    const round1Set = await Round1Set.findOne({ team });
+    if (!kriyaID) {
+      return res.status(400).json({ msg: "kriyaID is required" });
+    }
+
+    // Find team
+    const team = await Team.findOne({ kriyaID });
+
+    if (!team) {
+      return res.status(404).json({ msg: "Team not found" });
+    }
+
+    // Get set number
+    const setNo = Number(team.setNo);
+
+    const round1Set = await Round1Set.findOne({ setNo });
 
     if (!round1Set) {
       return res.status(404).json({
-        msg: "Round 1 questions not found for this team",
+        msg: "Round1 questions not found for this set",
       });
     }
 
@@ -25,17 +40,30 @@ export const getRound1Questions = async (req, res) => {
 // GET one question by sea number
 export const getRound1QuestionBySea = async (req, res) => {
   try {
-    const team = req.query.team || "KRIYA2026";
+    const { kriyaID } = req.query;
     const seaId = Number(req.params.seaId);
+
+    if (!kriyaID) {
+      return res.status(400).json({ msg: "kriyaID required" });
+    }
 
     if (!Number.isFinite(seaId)) {
       return res.status(400).json({ msg: "Invalid seaId" });
     }
 
-    const round1Set = await Round1Set.findOne({ team });
+    // Find team
+    const team = await Team.findOne({ kriyaID });
+
+    if (!team) {
+      return res.status(404).json({ msg: "Team not found" });
+    }
+
+    const setNo = Number(team.setNo);
+
+    const round1Set = await Round1Set.findOne({ setNo });
 
     if (!round1Set) {
-      return res.status(404).json({ msg: "Round 1 set not found" });
+      return res.status(404).json({ msg: "Round1 set not found" });
     }
 
     const question = round1Set.questions.find(
@@ -68,14 +96,22 @@ export const submitRound1Answer = async (req, res) => {
       });
     }
 
-    // Find question set
-    const round1Set = await Round1Set.findOne({ team: kriyaID });
+    // Find team
+    const team = await Team.findOne({ kriyaID });
 
-    if (!round1Set) {
-      return res.status(404).json({ msg: "Team questions not found" });
+    if (!team) {
+      return res.status(404).json({ msg: "Team not found" });
     }
 
-    // Find the question for the sea
+    const setNo = Number(team.setNo);
+
+    // Find question set
+    const round1Set = await Round1Set.findOne({ setNo });
+
+    if (!round1Set) {
+      return res.status(404).json({ msg: "Question set not found" });
+    }
+
     const question = round1Set.questions.find(
       (q) => Number(q.questionNo) === Number(seaId)
     );
@@ -94,16 +130,8 @@ export const submitRound1Answer = async (req, res) => {
       });
     }
 
-    // Find Team
-    const team = await Team.findOne({ kriyaID });
-
-    if (!team) {
-      return res.status(404).json({ msg: "Team not found" });
-    }
-
     const card = question.algorithmCard || null;
 
-    // Prevent duplicate solving
     const alreadyUnlocked = team.round1.selectedScrolls.some(
       (scroll) => scroll.name === card?.name
     );
@@ -117,13 +145,11 @@ export const submitRound1Answer = async (req, res) => {
       });
     }
 
-    // Update scores
     const points = question.points || 10;
 
     team.round1.score += points;
     team.totalScore += points;
 
-    // Save unlocked algorithm card
     if (card) {
       team.round1.selectedScrolls.push({
         name: card.name,

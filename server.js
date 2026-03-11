@@ -8,14 +8,9 @@ import mongoose from "mongoose";
 import cors from "cors";
 import otpRoutes from "./routes/otpRoutes.js";
 import adminRoutes from "./routes/AdminRoutes.js";
+import AuthRoutes from "./routes/AuthRoutes.js";
 // import SubmissionRoutes from "./routes/round1SubmissionRoutes.js";
-
-import round1Routes from "./routes/round1Routes.js";
-
-
-import adminRoutes from "./routes/AdminRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
-import otpRoutes from "./routes/otpRoutes.js";
 import actionCardRoutes from "./routes/actionCardRoutes.js";
 import algorithmRoutes from "./routes/algorithmRoutes.js";
 import round1Routes from "./routes/round1Routes.js";
@@ -52,6 +47,8 @@ mainRouter.get("/", (req, res) => {
 mainRouter.use("/api/admin", adminRoutes);
 mainRouter.use("/api/otp", otpRoutes);
 mainRouter.use("/api/round1", round1Routes); 
+mainRouter.use("/api/auth", AuthRoutes);
+mainRouter.use("/api/teams", teamRoutes);
 // mainRouter.use("/", SubmissionRoutes);
 
 // Team routes

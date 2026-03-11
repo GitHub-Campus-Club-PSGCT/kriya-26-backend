@@ -26,9 +26,14 @@ const teamSchema = new mongoose.Schema({
   shipConfig: {
     type: String,
     enum: ["WARSHIP", "MERCHANT", "GHOST"],
-    required: true,
-    trim: true
+    default: null
   },
+  setNo: {
+  type: Number,
+  min: 1,
+  max: 6,
+  default: null
+},
   round1: {
     selectedScrolls: [
       // { type: mongoose.Schema.Types.ObjectId, ref: "Problem" }
