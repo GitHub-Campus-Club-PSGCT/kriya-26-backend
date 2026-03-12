@@ -8,7 +8,15 @@ export const createRound2Question = async (req, res) => {
       return res.status(400).json({ msg: "title, description, and at least one testCase are required" });
     }
 
-    const question = new Round2Question({ title, description, allowedAlgorithms, timeLimitSec, code: req.body.code, testCases, createdBy });
+    const question = new Round2Question({ 
+      title, 
+      description, 
+      allowedAlgorithms, 
+      timeLimitSec, 
+      code: req.body.code, 
+      testCases, 
+      createdBy: createdBy || req.admin?._id 
+    });
     await question.save();
     res.json(question);
   } catch (err) {
