@@ -25,10 +25,11 @@ const LANGUAGE_MAP = {
  */
 export const createSubmission = async (req, res) => {
     try {
-        const { teamId, problemId, language_id, code } = req.body;
 
-        if (!teamId || !problemId || !language_id || !code) {
-            return res.status(400).json({ msg: "teamId, problemId, language_id, and code are required" });
+        const { teamId, kriyaID, problemId, language_id, code } = req.body;
+
+        if ((!teamId && !kriyaID) || !problemId || !language_id || !code) {
+            return res.status(400).json({ msg: "teamId (or kriyaID), problemId, language_id, and code are required" });
         }
 
         // Validate language_id
@@ -37,8 +38,13 @@ export const createSubmission = async (req, res) => {
             return res.status(400).json({ msg: "Unsupported language_id. Use 50 (C), 62 (JAVA), or 71 (PYTHON)" });
         }
 
-        // Fetch team and problem
-        const team = await Team.findById(teamId);
+        // Fetch team — prefer MongoDB _id, fallback to kriyaID lookup
+        let team;
+        if (teamId) {
+            team = await Team.findById(teamId);
+        } else {
+            team = await Team.findOne({ kriyaID: kriyaID.trim() });
+        }
         if (!team) return res.status(404).json({ msg: "Team not found" });
 
         const problem = await Round2Question.findById(problemId);
@@ -222,6 +228,56 @@ export const createSubmission = async (req, res) => {
     } catch (err) {
         console.error("Round2 submission error:", err);
         res.status(500).json({ msg: "Error processing submission", error: err.message });
+    }
+};
+
+/**
+ * Open a Round 2 problem for a team.
+ * Marks the problem status as ACTIVE and records the start time.
+ */
+export const openProblem = async (req, res) => {
+    try {
+        const { problemId } = req.body;
+        const team = req.team;
+
+        if (!problemId) {
+            return res.status(400).json({ msg: "problemId is required" });
+        }
+
+        if (!team || !team.round2 || !Array.isArray(team.round2.problemsStatus)) {
+            return res.status(400).json({ msg: "Round 2 not initialized for this team" });
+        }
+
+        const problemEntry = team.round2.problemsStatus.find(
+            (p) => p.problemId.toString() === problemId.toString()
+        );
+
+        if (!problemEntry) {
+            return res.status(400).json({ msg: "Problem not assigned to the team" });
+        }
+
+        if (problemEntry.status === "SOLVED") {
+            return res.status(400).json({ msg: "Problem already solved" });
+        }
+
+        // Ensure only one problem is active at a time
+        team.round2.problemsStatus.forEach((p) => {
+            if (p.status === "ACTIVE" && p.problemId.toString() !== problemId.toString()) {
+                p.status = "NOT_STARTED";
+            }
+        });
+
+        problemEntry.status = "ACTIVE";
+        if (!problemEntry.startTime) {
+            problemEntry.startTime = new Date();
+        }
+
+        await team.save();
+
+        res.json({ msg: "Problem opened", problemStatus: problemEntry });
+    } catch (err) {
+        console.error("Open problem error:", err);
+        res.status(500).json({ msg: "Error opening problem", error: err.message });
     }
 };
 

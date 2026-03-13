@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import Team from "../models/Team.js";
 import jwt from "jsonwebtoken";
 
