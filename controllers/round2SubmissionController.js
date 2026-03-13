@@ -55,7 +55,12 @@ export const createSubmission = async (req, res) => {
             (p) => p.problemId.toString() === problemId.toString()
         );
         if (!problemEntry) {
-            return res.status(400).json({ msg: "This problem is not assigned to the team" });
+            // Check if backend has mapping for this problem at all
+            const isAssigned = team.round2?.problemsStatus?.some(p => String(p.problemId) === String(problemId));
+            if (!isAssigned) {
+                return res.status(400).json({ msg: "This quest is not registered in yer ship's log!" });
+            }
+            return res.status(400).json({ msg: "Problem session lost. Please re-enter the island." });
         }
 
         // Edge case: reject if already SOLVED
@@ -75,6 +80,10 @@ export const createSubmission = async (req, res) => {
 
         // Execute code against test cases via Judge0
         const testCases = problem.testCases || [];
+        if (testCases.length === 0) {
+            return res.status(400).json({ msg: "This quest has no scrolls (test cases) to verify!" });
+        }
+
         const executionResult = await runTestCases(
             language,
             code,

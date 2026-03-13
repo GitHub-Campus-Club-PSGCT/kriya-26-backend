@@ -164,9 +164,9 @@ export const round2Answers = async (req, res) => {
     const team = await Team.findById(req.team._id);
     if (!team) return res.status(404).json({ msg: "Team not found" });
 
-    const selectedScrolls = team.round1.selectedScrolls;
+    const selectedScrolls = req.body.selectedScrolls;
     if (!selectedScrolls || selectedScrolls.length === 0) {
-      return res.status(400).json({ msg: "No scrolls selected in Round 1" });
+      return res.status(400).json({ msg: "No scrolls selected for Round 2" });
     }
 
     // Enforce exactly 3 distinct scrolls
@@ -181,17 +181,26 @@ export const round2Answers = async (req, res) => {
 
     // Map each scroll to a Round 2 problem
     const problemsStatus = [];
+    const usedProblemIds = new Set();
+    const allQuestions = await Round2Question.find({});
+    
     for (const scrollId of uniqueScrolls) {
-      const problem = await Round2Question.findOne({
-        allowedAlgorithms: scrollId
-      });
+      let problem = allQuestions.find(q => 
+          Array.isArray(q.allowedAlgorithms) && q.allowedAlgorithms.map(String).includes(String(scrollId))
+      );
+
+      // Backfill missing quests if no strict match is found
+      if (!problem) {
+         problem = allQuestions.find(q => !usedProblemIds.has(q._id.toString()));
+      }
 
       if (!problem) {
         return res.status(400).json({
-          msg: `No Round 2 problem found for scroll (algorithm card) ${scrollId}`
+          msg: `Not enough Round 2 problems available to map for scroll ${scrollId}. Database needs more questions.`
         });
       }
 
+      usedProblemIds.add(problem._id.toString());
       problemsStatus.push({
         problemId: problem._id,
         livesLeft: lives,

@@ -8,8 +8,8 @@ import {
 const router = express.Router();
 
 router.get("/questions", getRound1Questions);
+router.get("/questions/sea/:seaId", getRound1QuestionBySea);
 router.get("/questions/:kriyaID", getRound1Questions);
-router.get("/questions/:seaId", getRound1QuestionBySea);
 router.post("/submit", submitRound1Answer);
 
 export default router;
