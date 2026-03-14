@@ -13,7 +13,7 @@ const round2SubmissionSchema = new mongoose.Schema({
     },
     language: {
         type: String,
-        enum: ["C", "JAVA", "PYTHON"],
+        enum: ["C", "CPP", "JAVA", "PYTHON"],
         required: true
     },
     code: {
