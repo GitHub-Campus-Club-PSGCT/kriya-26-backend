@@ -22,17 +22,24 @@ const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 /**
  * Promise-based request using Node http/https (supports both protocols).
  * node-fetch v3 only supports https; Judge0 is often run over http internally.
+ * Sets Content-Length so the server actually receives the body.
  */
 function request(urlStr, options = {}) {
     const url = new URL(urlStr);
     const isHttps = url.protocol === "https:";
     const lib = isHttps ? https : http;
+    const headers = { ...options.headers };
+    const body = options.body != null ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : null;
+    if (body) {
+        const bodyBuffer = Buffer.from(body, "utf8");
+        headers["Content-Length"] = bodyBuffer.length;
+    }
     const reqOptions = {
         hostname: url.hostname,
         port: url.port || (isHttps ? 443 : 80),
         path: url.pathname + url.search,
         method: options.method || "GET",
-        headers: options.headers || {}
+        headers
     };
     if (isHttps) reqOptions.agent = httpsAgent;
 
@@ -41,17 +48,17 @@ function request(urlStr, options = {}) {
             const chunks = [];
             res.on("data", (chunk) => chunks.push(chunk));
             res.on("end", () => {
-                const body = Buffer.concat(chunks).toString();
+                const responseBody = Buffer.concat(chunks).toString();
                 resolve({
                     ok: res.statusCode >= 200 && res.statusCode < 300,
                     status: res.statusCode,
-                    text: () => Promise.resolve(body),
-                    json: () => Promise.resolve(JSON.parse(body || "null"))
+                    text: () => Promise.resolve(responseBody),
+                    json: () => Promise.resolve(JSON.parse(responseBody || "null"))
                 });
             });
         });
         req.on("error", reject);
-        if (options.body) req.write(options.body);
+        if (body) req.write(body, "utf8");
         req.end();
     });
 }
@@ -141,6 +148,11 @@ export async function executeCode(language, sourceCode, stdin, timeLimitSec = 10
 
     if (!response.ok) {
         const errorText = await response.text();
+        console.error("[Judge0] Request payload sent:", {
+            language_id: payload.language_id,
+            source_code_length: payload.source_code?.length ?? 0,
+            source_code_preview: payload.source_code?.slice(0, 80) ?? "(empty)"
+        });
         throw new Error(`Judge0 API error (${response.status}): ${errorText}`);
     }
 
