@@ -26,16 +26,22 @@ const LANGUAGE_MAP = {
 export const createSubmission = async (req, res) => {
     try {
 
-        const { teamId, kriyaID, problemId, language_id, code } = req.body;
+        const { teamId, kriyaID, problemId, language_id, languageId, code, sourceCode } = req.body;
+        const langId = language_id ?? languageId;
+        const codeRaw = code ?? sourceCode;
 
-        if ((!teamId && !kriyaID) || !problemId || !language_id || !code) {
+        if ((!teamId && !kriyaID) || !problemId || langId == null || langId === "") {
             return res.status(400).json({ msg: "teamId (or kriyaID), problemId, language_id, and code are required" });
+        }
+        const codeStr = codeRaw != null ? String(codeRaw).trim() : "";
+        if (!codeStr) {
+            return res.status(400).json({ msg: "code cannot be blank" });
         }
 
         // Validate language_id
-        const language = LANGUAGE_MAP[parseInt(language_id)];
+        const language = LANGUAGE_MAP[parseInt(langId, 10)];
         if (!language) {
-            return res.status(400).json({ msg: "Unsupported language_id. Use 50 (C), 62 (JAVA), or 71 (PYTHON)" });
+            return res.status(400).json({ msg: "Unsupported language_id. Use 50 (C), 54 (CPP), 62 (JAVA), or 71 (PYTHON)" });
         }
 
         // Fetch team — prefer MongoDB _id, fallback to kriyaID lookup
@@ -86,7 +92,7 @@ export const createSubmission = async (req, res) => {
 
         const executionResult = await runTestCases(
             language,
-            code,
+            codeStr,
             testCases,
             problem.timeLimitSec || 10
         );

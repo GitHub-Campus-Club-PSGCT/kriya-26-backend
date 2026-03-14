@@ -100,24 +100,32 @@ function normalizeValue(val) {
  * @param {number} timeLimitSec - Time limit in seconds
  * @returns {Promise<{stdout, stderr, compile_output, status, time, memory}>}
  */
+const VALID_LANGUAGE_IDS = new Set([50, 54, 62, 71]);
+
 export async function executeCode(language, sourceCode, stdin, timeLimitSec = 10) {
     const JUDGE0_URL = process.env.JUDGE0_API_URL || "http://10.1.22.141:2358";
 
     // Accept either language_id number or language name string
     const languageId = typeof language === "number"
         ? language
-        : LANGUAGE_IDS[language.toUpperCase()];
+        : (language != null && LANGUAGE_IDS[String(language).toUpperCase()]);
 
-    if (!languageId) {
-        throw new Error(`Unsupported language: ${language}. Supported: 50 (C), 62 (JAVA), 71 (PYTHON)`);
+    if (languageId == null || !VALID_LANGUAGE_IDS.has(Number(languageId))) {
+        throw new Error(`Unsupported language: ${language}. Supported: 50 (C), 54 (CPP), 62 (JAVA), 71 (PYTHON)`);
+    }
+
+    const codeStr = sourceCode != null ? String(sourceCode) : "";
+    const trimmedCode = codeStr.trim();
+    if (!trimmedCode) {
+        throw new Error("source_code cannot be blank");
     }
 
     // --- NORMALIZATION: Clean the stdin if it looks like "var = val" ---
     const cleanStdin = normalizeValue(stdin);
 
     const payload = {
-        language_id: languageId,
-        source_code: sourceCode,
+        language_id: Number(languageId),
+        source_code: trimmedCode,
         stdin: cleanStdin,
         cpu_time_limit: Math.min(timeLimitSec, 15)
     };
